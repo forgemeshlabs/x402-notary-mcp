@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.forgemeshlabs/x402-notary-mcp",
+  "description": "Cryptographic receipts for AI outputs: signed Ed25519 attestations, sha256 content hashes, and Merkle chain-anchors on Base for $0.001 per inference via x402 USDC micropayments. Free verification, no wallet needed. The notary stores the hash, never your prompts.",
+  "repository": {
+    "url": "https://github.com/forgemeshlabs/x402-notary-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@forgemeshlabs/x402-notary-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "WALLET_PRIVATE_KEY",
+          "description": "Dedicated low-balance Base wallet private key for x402 USDC micropayments ($1 notarizes 1,000 outputs). Optional — verification tools work without it. Never use your primary wallet.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

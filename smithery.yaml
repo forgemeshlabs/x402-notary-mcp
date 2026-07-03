@@ -1,0 +1,23 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      walletPrivateKey:
+        type: string
+        description: >-
+          Dedicated low-balance Base wallet private key for x402 USDC
+          micropayments — $1 notarizes 1,000 outputs. Optional: the free
+          verification tools (verify_attestation, get_receipt, notary_stats,
+          notary_pubkey) work without any wallet. Never use your primary
+          wallet.
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', '@forgemeshlabs/x402-notary-mcp'],
+      env: config.walletPrivateKey ? {
+        WALLET_PRIVATE_KEY: config.walletPrivateKey
+      } : {}
+    })
+  exampleConfig:
+    walletPrivateKey: '0x...'
