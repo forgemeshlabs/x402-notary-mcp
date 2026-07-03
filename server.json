@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.forgemeshlabs/x402-notary-mcp",
-  "description": "Cryptographic receipts for AI outputs: signed Ed25519 attestations, sha256 content hashes, and Merkle chain-anchors on Base for $0.001 per inference via x402 USDC micropayments. Free verification, no wallet needed. The notary stores the hash, never your prompts.",
+  "description": "The notary of the x402 agent economy, by ForgeMesh Labs. Cryptographic receipts for AI outputs: signed Ed25519 attestations, sha256 content hashes, and Merkle chain-anchors on Base for $0.001 per inference via x402 USDC micropayments. Free verification, no wallet needed. We notarize the hash, never your prompts.",
   "repository": {
     "url": "https://github.com/forgemeshlabs/x402-notary-mcp",
     "source": "github"

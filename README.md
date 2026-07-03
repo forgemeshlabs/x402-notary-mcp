@@ -1,5 +1,7 @@
 # x402 Notary — Cryptographic Receipts for AI Outputs
 
+*A [ForgeMesh Labs](https://forgemesh.io) product — the notary of the x402 agent economy.*
+
 **Prove what your AI said, when it said it, and which model said it.**
 
 Every AI output is just text. There's no proof a specific model produced a specific response at a specific time — and as agents start hiring other agents, that trust gap gets expensive. x402 Notary closes it: submit any inference, pay **$0.001** in USDC (automatic, via [x402](https://x402.org) on Base — no API key, no account), and get back a **signed, timestamped, chain-anchored receipt** that anyone can verify, free, forever.
@@ -111,6 +113,8 @@ Prefer raw HTTP? The full agent-readable surface:
 **What chain and token?** USDC on Base mainnet (`eip155:8453`).
 
 **Can I verify receipts without contacting the notary?** Yes — fetch the Ed25519 public key once (`notary_pubkey`) and verify signatures offline.
+
+**Why "x402 Notary"?** [x402](https://x402.org) is the open protocol that lets AI agents pay for services in USDC over plain HTTP — and this is its notary: the attestation layer agents use to prove and verify each other's outputs before money or reputation moves on them.
 
 ---
 
