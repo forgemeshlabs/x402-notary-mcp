@@ -46,5 +46,13 @@
         }
       ]
     }
+  ],
+  "title": "x402 Notary MCP",
+  "websiteUrl": "https://notary.forgemesh.io",
+  "icons": [
+    {
+      "src": "https://notary.forgemesh.io/favicon.ico",
+      "mimeType": "image/png"
+    }
   ]
 }

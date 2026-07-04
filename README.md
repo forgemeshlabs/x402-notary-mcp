@@ -1,5 +1,8 @@
 # x402 Notary — Cryptographic Receipts for AI Outputs
 
+[![x402-notary-mcp MCP server](https://glama.ai/mcp/servers/forgemeshlabs/x402-notary-mcp/badges/score.svg)](https://glama.ai/mcp/servers/forgemeshlabs/x402-notary-mcp)
+[![x402-notary-mcp MCP server](https://glama.ai/mcp/servers/forgemeshlabs/x402-notary-mcp/badges/card.svg)](https://glama.ai/mcp/servers/forgemeshlabs/x402-notary-mcp)
+
 *A [ForgeMesh Labs](https://forgemesh.io) product — the notary of the x402 agent economy.*
 
 **Prove what your AI said, when it said it, and which model said it.**
