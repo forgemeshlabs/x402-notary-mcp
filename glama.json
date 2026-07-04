@@ -1,50 +1,19 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "name": "x402-notary-mcp",
-  "version": "0.1.1",
+  "name": "@forgemeshlabs/x402-notary-mcp",
   "description": "Cryptographic receipts for AI outputs on Base or Solana via x402.",
-  "homepage": "https://notary.forgemesh.io",
-  "repository": "https://github.com/forgemeshlabs/x402-notary-mcp",
   "maintainers": [
     "clawdbotworker"
   ],
-  "transport": {
-    "type": "stdio",
-    "command": "x402-notary-mcp"
-  },
-  "build": {
-    "dockerfile": "Dockerfile",
-    "steps": [
-      "npm ci --omit=dev"
-    ],
-    "cmd": [
-      "node",
-      "index.js"
-    ]
-  },
-  "env": {
-    "NOTARY_RAIL": {
-      "description": "Payment rail. Use base or solana.",
-      "required": false,
-      "default": "base"
-    },
-    "NOTARY_BASE_URL": {
-      "description": "Notary API origin. Base: https://notary.forgemesh.io. Solana: https://notary-solana.forgemesh.io.",
-      "required": false,
-      "default": "https://notary.forgemesh.io"
-    },
-    "WALLET_PRIVATE_KEY": {
-      "description": "Optional dedicated low-balance Base wallet private key for paid x402 notarization. Free verification tools work without it.",
-      "required": false
-    },
-    "SOLANA_PRIVATE_KEY": {
-      "description": "Optional dedicated low-balance Solana keypair for paid x402 notarization. Supports JSON byte array, base58, base64, or hex.",
-      "required": false
-    },
-    "BASE_RPC_URL": {
-      "description": "Optional Base mainnet RPC URL used for Base payment timestamp safety.",
-      "required": false,
-      "default": "https://mainnet.base.org"
-    }
-  }
+  "tags": [
+    "x402",
+    "usdc",
+    "base",
+    "solana",
+    "notary",
+    "receipts",
+    "attestations",
+    "mcp",
+    "autonomous-agents"
+  ]
 }

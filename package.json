@@ -1,6 +1,6 @@
 {
   "name": "@forgemeshlabs/x402-notary-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The notary of the x402 agent economy, by ForgeMesh Labs. Cryptographic receipts for AI outputs: notarize any model inference with a signed Ed25519 attestation, sha256 content hash, and Merkle chain-anchor on Base or Solana — $0.001 per call via x402 USDC micropayments. Verification is free and needs no wallet. We notarize the hash, never your prompts.",
   "main": "index.js",
   "bin": {
@@ -10,6 +10,10 @@
     "index.js",
     "README.md",
     "server.json",
+    "glama.json",
+    "Dockerfile",
+    ".dockerignore",
+    "smithery.yaml",
     "LICENSE"
   ],
   "mcpName": "io.github.forgemeshlabs/x402-notary-mcp",
