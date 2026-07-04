@@ -3,6 +3,19 @@ startCommand:
   configSchema:
     type: object
     properties:
+      notaryRail:
+        type: string
+        enum:
+          - base
+          - solana
+        description: >-
+          Payment rail. Defaults to base. Use solana with
+          https://notary-solana.forgemesh.io.
+      notaryBaseUrl:
+        type: string
+        description: >-
+          Notary API origin. Base: https://notary.forgemesh.io. Solana:
+          https://notary-solana.forgemesh.io.
       walletPrivateKey:
         type: string
         description: >-
@@ -11,13 +24,24 @@ startCommand:
           verification tools (verify_attestation, get_receipt, notary_stats,
           notary_pubkey) work without any wallet. Never use your primary
           wallet.
+      solanaPrivateKey:
+        type: string
+        description: >-
+          Dedicated low-balance Solana keypair for x402 USDC micropayments.
+          Supports JSON byte array, base58, base64, or hex. Optional: free
+          verification tools work without any wallet.
   commandFunction: |-
     (config) => ({
       command: 'npx',
       args: ['-y', '@forgemeshlabs/x402-notary-mcp'],
-      env: config.walletPrivateKey ? {
-        WALLET_PRIVATE_KEY: config.walletPrivateKey
-      } : {}
+      env: {
+        ...(config.notaryRail ? { NOTARY_RAIL: config.notaryRail } : {}),
+        ...(config.notaryBaseUrl ? { NOTARY_BASE_URL: config.notaryBaseUrl } : {}),
+        ...(config.walletPrivateKey ? { WALLET_PRIVATE_KEY: config.walletPrivateKey } : {}),
+        ...(config.solanaPrivateKey ? { SOLANA_PRIVATE_KEY: config.solanaPrivateKey } : {})
+      }
     })
   exampleConfig:
+    notaryRail: base
+    notaryBaseUrl: 'https://notary.forgemesh.io'
     walletPrivateKey: '0x...'

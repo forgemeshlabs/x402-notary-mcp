@@ -10,10 +10,14 @@ const { toClientEvmSigner } = require("@x402/evm");
 const { privateKeyToAccount } = require("viem/accounts");
 const { createPublicClient, http } = require("viem");
 const { base } = require("viem/chains");
+const { registerExactSvmScheme } = require("@x402/svm/exact/client");
+const { createKeyPairSignerFromBytes, createKeyPairSignerFromPrivateKeyBytes } = require("@solana/kit");
+const bs58 = require("bs58").default;
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 const BASE_URL = (process.env.NOTARY_BASE_URL || "https://notary.forgemesh.io").replace(/\/$/, "");
 const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
+const NOTARY_RAIL = (process.env.NOTARY_RAIL || (BASE_URL.includes("notary-solana") ? "solana" : "base")).toLowerCase();
 
 const RECORD_PROPS = {
   prompt: { type: "string", description: "The exact prompt/input that was sent to the model" },
@@ -29,7 +33,7 @@ const TOOLS = [
   {
     name: "notarize_inference",
     description:
-      "Get a cryptographic receipt for one AI inference. Returns a signed Ed25519 attestation, sha256 content hash, and Merkle chain-anchor status for {prompt, response, model_id}. The notary does NOT store your prompt or response — only the hash is retained. Costs $0.001 USDC via x402 (requires WALLET_PRIVATE_KEY).",
+      "Get a cryptographic receipt for one AI inference. Returns a signed Ed25519 attestation, sha256 content hash, and Merkle chain-anchor status for {prompt, response, model_id}. The notary does NOT store your prompt or response — only the hash is retained. Costs $0.001 USDC via x402 (requires WALLET_PRIVATE_KEY for Base or SOLANA_PRIVATE_KEY for Solana).",
     inputSchema: {
       type: "object",
       properties: RECORD_PROPS,
@@ -39,7 +43,7 @@ const TOOLS = [
   {
     name: "notarize_batch",
     description:
-      "Notarize up to 20 AI inferences in one call — one signed attestation per record. Ideal for audit trails and agent pipelines. Costs $0.005 USDC via x402 (requires WALLET_PRIVATE_KEY).",
+      "Notarize up to 20 AI inferences in one call — one signed attestation per record. Ideal for audit trails and agent pipelines. Costs $0.005 USDC via x402 (requires WALLET_PRIVATE_KEY for Base or SOLANA_PRIVATE_KEY for Solana).",
     inputSchema: {
       type: "object",
       properties: {
@@ -97,7 +101,40 @@ const TOOLS = [
   },
 ];
 
-function buildHttpClient() {
+function parseSolanaKeyBytes(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+  if (value.startsWith("[")) return Uint8Array.from(JSON.parse(value));
+  if (/^[0-9a-fA-F]+$/.test(value) && value.length % 2 === 0) {
+    return Uint8Array.from(Buffer.from(value, "hex"));
+  }
+  try {
+    return Uint8Array.from(bs58.decode(value));
+  } catch (_) {
+    return Uint8Array.from(Buffer.from(value, "base64"));
+  }
+}
+
+async function buildSolanaHttpClient() {
+  const raw = process.env.SOLANA_PRIVATE_KEY || process.env.SOLANA_KEYPAIR || process.env.SOLANA_PRIVATE_KEY_BYTES;
+  const bytes = parseSolanaKeyBytes(raw);
+  if (!bytes) {
+    throw new Error(
+      "SOLANA_PRIVATE_KEY is not set. Solana notarization costs $0.001 USDC via x402 — set a dedicated low-balance Solana wallet keypair. Verification tools work without it."
+    );
+  }
+  const signer =
+    bytes.length === 32
+      ? await createKeyPairSignerFromPrivateKeyBytes(bytes)
+      : await createKeyPairSignerFromBytes(bytes);
+  const coreClient = registerExactSvmScheme(new x402Client(), {
+    signer,
+    networks: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
+  });
+  return { httpClient: new x402HTTPClient(coreClient), account: { address: signer.address }, rail: "solana" };
+}
+
+function buildBaseHttpClient() {
   const key = process.env.WALLET_PRIVATE_KEY;
   if (!key) {
     throw new Error(
@@ -107,7 +144,13 @@ function buildHttpClient() {
   const pk = key.startsWith("0x") ? key : "0x" + key;
   const account = privateKeyToAccount(pk);
   const coreClient = new x402Client().register("eip155:*", new ExactEvmScheme(toClientEvmSigner(account)));
-  return { httpClient: new x402HTTPClient(coreClient), account };
+  return { httpClient: new x402HTTPClient(coreClient), account, rail: "base" };
+}
+
+async function buildHttpClient() {
+  if (NOTARY_RAIL === "solana") return buildSolanaHttpClient();
+  if (NOTARY_RAIL === "base") return buildBaseHttpClient();
+  throw new Error(`Unsupported NOTARY_RAIL=${NOTARY_RAIL}. Use "base" or "solana".`);
 }
 
 // x402 derives EIP-3009 validity windows from Date.now; choose a timestamp
@@ -159,7 +202,10 @@ async function paidPost(ctx, path, body) {
       challengeBody = await res.clone().json();
     } catch (_) {}
     const paymentRequired = httpClient.getPaymentRequiredResponse((name) => res.headers.get(name), challengeBody);
-    const paymentPayload = await createChainTimedPaymentPayload(httpClient, paymentRequired);
+    const paymentPayload =
+      ctx.rail === "base"
+        ? await createChainTimedPaymentPayload(httpClient, paymentRequired)
+        : await httpClient.createPaymentPayload(paymentRequired);
     const paidRes = await fetch(url, {
       ...init,
       headers: { ...init.headers, ...httpClient.encodePaymentSignatureHeader(paymentPayload) },
@@ -186,10 +232,10 @@ async function paidPost(ctx, path, body) {
 }
 
 async function main() {
-  let ctx;
-  function getPaymentContext() {
-    if (!ctx) ctx = buildHttpClient();
-    return ctx;
+  let ctxPromise;
+  async function getPaymentContext() {
+    if (!ctxPromise) ctxPromise = buildHttpClient();
+    return ctxPromise;
   }
 
   const server = new Server({ name: "x402-notary-mcp", version: VERSION }, { capabilities: { tools: {} } });
@@ -202,10 +248,10 @@ async function main() {
       let data;
       switch (name) {
         case "notarize_inference":
-          data = await paidPost(getPaymentContext(), "/api/notarize", args);
+          data = await paidPost(await getPaymentContext(), "/api/notarize", args);
           break;
         case "notarize_batch":
-          data = await paidPost(getPaymentContext(), "/api/notarize/batch", { records: args.records });
+          data = await paidPost(await getPaymentContext(), "/api/notarize/batch", { records: args.records });
           break;
         case "verify_attestation":
           data = await freeFetch("/api/verify", {
@@ -234,7 +280,7 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`x402-notary-mcp v${VERSION} ready — ${BASE_URL}`);
+  console.error(`x402-notary-mcp v${VERSION} ready — ${BASE_URL} rail=${NOTARY_RAIL}`);
 }
 
 main().catch((e) => {

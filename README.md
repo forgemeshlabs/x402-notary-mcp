@@ -4,11 +4,11 @@
 
 **Prove what your AI said, when it said it, and which model said it.**
 
-Every AI output is just text. There's no proof a specific model produced a specific response at a specific time — and as agents start hiring other agents, that trust gap gets expensive. x402 Notary closes it: submit any inference, pay **$0.001** in USDC (automatic, via [x402](https://x402.org) on Base — no API key, no account), and get back a **signed, timestamped, chain-anchored receipt** that anyone can verify, free, forever.
+Every AI output is just text. There's no proof a specific model produced a specific response at a specific time — and as agents start hiring other agents, that trust gap gets expensive. x402 Notary closes it: submit any inference, pay **$0.001** in USDC (automatic, via [x402](https://x402.org) on Base or Solana — no API key, no account), and get back a **signed, timestamped, chain-anchored receipt** that anyone can verify, free, forever.
 
-> **We notarize the hash, not your secrets.** Your prompt and response are hashed and signed — never stored. Private signed receipts, publicly anchored by batch root on Base.
+> **We notarize the hash, not your secrets.** Your prompt and response are hashed and signed — never stored. Private signed receipts, publicly anchored by batch root.
 
-## Quick start (Claude Desktop / Claude Code / any MCP client)
+## Quick start: Base (Claude Desktop / Claude Code / any MCP client)
 
 ```json
 {
@@ -25,6 +25,26 @@ Every AI output is just text. There's no proof a specific model produced a speci
 ```
 
 `WALLET_PRIVATE_KEY` is a **dedicated low-balance Base wallet** for x402 micropayments — never your primary wallet. $1 of USDC notarizes 1,000 outputs.
+
+## Quick start: Solana
+
+```json
+{
+  "mcpServers": {
+    "x402-notary-solana": {
+      "command": "npx",
+      "args": ["-y", "@forgemeshlabs/x402-notary-mcp"],
+      "env": {
+        "NOTARY_RAIL": "solana",
+        "NOTARY_BASE_URL": "https://notary-solana.forgemesh.io",
+        "SOLANA_PRIVATE_KEY": "[1,2,...]"
+      }
+    }
+  }
+}
+```
+
+`SOLANA_PRIVATE_KEY` is a dedicated low-balance Solana keypair for x402 micropayments. It may be a JSON byte array, base58, base64, or hex-encoded 32/64-byte key. Never use your primary wallet.
 
 **Verification needs no wallet at all.** Skip the `env` block entirely and you can still verify receipts, inspect attestations, and read live stats.
 
@@ -57,7 +77,7 @@ That's proof of three things:
 
 1. **Existence** — this exact content existed at this exact time.
 2. **Integrity** — change one character of the prompt or response and verification fails.
-3. **Independence** — signatures verify offline with the published key; Merkle roots anchor batches on Base. You don't have to trust the notary's word after the fact.
+3. **Independence** — signatures verify offline with the published key; Merkle roots anchor batches. You don't have to trust the notary's word after the fact.
 
 ## Verify anything, free, from anywhere
 
@@ -92,7 +112,7 @@ Casual chat and scratchpad reasoning don't need receipts. Externalized outputs d
 
 ## How payment works
 
-No signup, no API key, no subscription. The first request returns an HTTP 402 challenge; your MCP client signs a USDC payment authorization (EIP-3009) and retries. Settlement happens on Base in seconds and the receipt lands in the same response — including the payment transaction hash under `_payment`.
+No signup, no API key, no subscription. The first request returns an HTTP 402 challenge; your MCP client signs a USDC payment authorization and retries. Base uses EIP-3009; Solana uses the x402 SVM exact rail. The receipt lands in the same response — including the payment transaction hash under `_payment`.
 
 ## Direct API
 
@@ -101,6 +121,9 @@ Prefer raw HTTP? The full agent-readable surface:
 - `https://notary.forgemesh.io/llms.txt` — one-page summary for agents
 - `https://notary.forgemesh.io/openapi.json` — OpenAPI 3.1 with x402 payment metadata
 - `https://notary.forgemesh.io/.well-known/x402.json` — x402 discovery manifest
+- `https://notary-solana.forgemesh.io/llms.txt` — Solana rail summary
+- `https://notary-solana.forgemesh.io/openapi.json` — Solana OpenAPI 3.1 with x402 metadata
+- `https://notary-solana.forgemesh.io/.well-known/x402.json` — Solana x402 discovery manifest
 
 ## FAQ
 
@@ -110,7 +133,7 @@ Prefer raw HTTP? The full agent-readable surface:
 
 **What does verification cost?** Nothing, for anyone, forever. Charging to verify would defeat the point of a trust primitive.
 
-**What chain and token?** USDC on Base mainnet (`eip155:8453`).
+**What chain and token?** USDC on Base mainnet (`eip155:8453`) by default. Set `NOTARY_RAIL=solana` and `NOTARY_BASE_URL=https://notary-solana.forgemesh.io` for Solana mainnet USDC.
 
 **Can I verify receipts without contacting the notary?** Yes — fetch the Ed25519 public key once (`notary_pubkey`) and verify signatures offline.
 
