@@ -14,4 +14,7 @@ ENV NODE_ENV=production \
 
 USER node
 
+RUN (npm install) && (npm run build)
+CMD ["mcp-proxy","--","node","./server.js"]/
+
 ENTRYPOINT ["node", "index.js"]
