@@ -14,7 +14,7 @@ const { registerExactSvmScheme } = require("@x402/svm/exact/client");
 const { createKeyPairSignerFromBytes, createKeyPairSignerFromPrivateKeyBytes } = require("@solana/kit");
 const bs58 = require("bs58").default;
 
-const VERSION = "0.1.1";
+const VERSION = "0.1.5";
 const BASE_URL = (process.env.NOTARY_BASE_URL || "https://notary.forgemesh.io").replace(/\/$/, "");
 const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const NOTARY_RAIL = (process.env.NOTARY_RAIL || (BASE_URL.includes("notary-solana") ? "solana" : "base")).toLowerCase();
