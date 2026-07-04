@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY index.js README.md LICENSE server.json glama.json smithery.yaml ./
+COPY index.js README.md LICENSE server.json glama.json GLAMA.md smithery.yaml ./
 RUN chmod +x /app/index.js
 
 ENV NODE_ENV=production \
@@ -13,8 +13,5 @@ ENV NODE_ENV=production \
   NOTARY_RAIL=base
 
 USER node
-
-RUN (npm install) && (npm run build)
-CMD ["mcp-proxy","--","node","./server.js"]/
 
 ENTRYPOINT ["node", "index.js"]
