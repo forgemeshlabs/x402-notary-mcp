@@ -1,5 +1,7 @@
 # x402 Notary — Cryptographic Receipts for AI Outputs
 
+[![M8ven Verified](https://m8ven.ai/badge/mcp/forgemeshlabs-x402-notary-mcp-ud1lz4?variant=verified)](https://m8ven.ai/mcp/forgemeshlabs-x402-notary-mcp-ud1lz4)
+
 [![x402-notary-mcp MCP server](https://glama.ai/mcp/servers/forgemeshlabs/x402-notary-mcp/badges/score.svg)](https://glama.ai/mcp/servers/forgemeshlabs/x402-notary-mcp)
 [![x402-notary-mcp MCP server](https://glama.ai/mcp/servers/forgemeshlabs/x402-notary-mcp/badges/card.svg)](https://glama.ai/mcp/servers/forgemeshlabs/x402-notary-mcp)
 
