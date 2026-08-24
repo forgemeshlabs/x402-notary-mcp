@@ -14,7 +14,7 @@ const { registerExactSvmScheme } = require("@x402/svm/exact/client");
 const { createKeyPairSignerFromBytes, createKeyPairSignerFromPrivateKeyBytes } = require("@solana/kit");
 const bs58 = require("bs58").default;
 
-const VERSION = "0.1.5";
+const VERSION = "0.1.7";
 const BASE_URL = (process.env.NOTARY_BASE_URL || "https://notary.forgemesh.io").replace(/\/$/, "");
 const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const NOTARY_RAIL = (process.env.NOTARY_RAIL || (BASE_URL.includes("notary-solana") ? "solana" : "base")).toLowerCase();
@@ -32,6 +32,12 @@ const RECORD_PROPS = {
 const TOOLS = [
   {
     name: "notarize_inference",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description:
       "Get a cryptographic receipt for one AI inference. Returns a signed Ed25519 attestation, sha256 content hash, and Merkle chain-anchor status for {prompt, response, model_id}. The notary does NOT store your prompt or response — only the hash is retained. Costs $0.001 USDC via x402 (requires WALLET_PRIVATE_KEY for Base or SOLANA_PRIVATE_KEY for Solana).",
     inputSchema: {
@@ -42,6 +48,12 @@ const TOOLS = [
   },
   {
     name: "notarize_batch",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description:
       "Notarize up to 20 AI inferences in one call — one signed attestation per record. Ideal for audit trails and agent pipelines. Costs $0.005 USDC via x402 (requires WALLET_PRIVATE_KEY for Base or SOLANA_PRIVATE_KEY for Solana).",
     inputSchema: {
@@ -60,6 +72,12 @@ const TOOLS = [
   },
   {
     name: "verify_attestation",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description:
       "FREE — verify any attestation issued by the notary. Supply the attestation_id plus either the original content ({prompt, response, model_id}) or its content_hash. Returns the Ed25519 signature check, hash comparison, and a Merkle inclusion proof once the batch is sealed. No wallet needed.",
     inputSchema: {
@@ -77,6 +95,12 @@ const TOOLS = [
   },
   {
     name: "get_receipt",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description:
       "FREE — fetch the public receipt for an attestation: content hash, model, timestamps, Ed25519 signature, and Merkle anchor proof. Raw prompt/response are never stored, so receipts contain proof material only. No wallet needed.",
     inputSchema: {
@@ -89,12 +113,24 @@ const TOOLS = [
   },
   {
     name: "notary_stats",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description:
       "FREE — live aggregate stats: total notarizations, 24h volume, top models by attestation count, sealed/anchored Merkle batches. No wallet needed.",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "notary_pubkey",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     description:
       "FREE — the notary's Ed25519 public key (base64, raw 32 bytes) for fully offline signature verification. No wallet needed.",
     inputSchema: { type: "object", properties: {} },
