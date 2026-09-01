@@ -6,19 +6,19 @@
     "url": "https://github.com/forgemeshlabs/x402-notary-mcp",
     "source": "github"
   },
-  "version": "0.1.7",
+  "version": "0.1.8",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@forgemeshlabs/x402-notary-mcp",
-      "version": "0.1.7",
+      "version": "0.1.8",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
           "name": "WALLET_PRIVATE_KEY",
-          "description": "Dedicated low-balance Base wallet private key for x402 USDC micropayments. Optional — verification tools work without it. Never use your primary wallet.",
+          "description": "Dedicated low-balance Base wallet private key for x402 USDC micropayments. Optional \u2014 verification tools work without it. Never use your primary wallet.",
           "isRequired": false,
           "isSecret": true,
           "format": "string"
@@ -39,7 +39,7 @@
         },
         {
           "name": "SOLANA_PRIVATE_KEY",
-          "description": "Dedicated low-balance Solana keypair for x402 USDC micropayments. Supports JSON byte array, base58, base64, or hex. Optional — verification tools work without it.",
+          "description": "Dedicated low-balance Solana keypair for x402 USDC micropayments. Supports JSON byte array, base58, base64, or hex. Optional \u2014 verification tools work without it.",
           "isRequired": false,
           "isSecret": true,
           "format": "string"
@@ -51,8 +51,11 @@
   "websiteUrl": "https://notary.forgemesh.io",
   "icons": [
     {
-      "src": "https://notary.forgemesh.io/favicon.ico",
-      "mimeType": "image/png"
+      "src": "https://forgemesh.io/favicon.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "1254x1254"
+      ]
     }
   ]
 }
