@@ -1,3 +1,6 @@
 node_modules/
 .env
 *.log
+
+# local code-graph index, never committed
+.graphify/
