@@ -5,12 +5,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY index.js README.md LICENSE server.json glama.json GLAMA.md smithery.yaml ./
+COPY index.js x402-guard.js README.md LICENSE server.json glama.json GLAMA.md smithery.yaml ./
 RUN chmod +x /app/index.js
 
-ENV NODE_ENV=production \
-  NOTARY_BASE_URL=https://notary.forgemesh.io \
-  NOTARY_RAIL=base
+ENV NODE_ENV=production
 
 USER node
 

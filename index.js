@@ -8,23 +8,23 @@ const { x402Client, x402HTTPClient } = require("@x402/core/client");
 const { ExactEvmScheme } = require("@x402/evm/exact/client");
 const { toClientEvmSigner } = require("@x402/evm");
 const { privateKeyToAccount } = require("viem/accounts");
-const { createPublicClient, http } = require("viem");
-const { base } = require("viem/chains");
-const { registerExactSvmScheme } = require("@x402/svm/exact/client");
-const { createKeyPairSignerFromBytes, createKeyPairSignerFromPrivateKeyBytes } = require("@solana/kit");
-const bs58 = require("bs58").default;
+const { createGuard } = require("./x402-guard");
 
-const VERSION = "0.1.9";
-const BASE_URL = (process.env.NOTARY_BASE_URL || "https://notary.forgemesh.io").replace(/\/$/, "");
-const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
-const NOTARY_RAIL = (process.env.NOTARY_RAIL || (BASE_URL.includes("notary-solana") ? "solana" : "base")).toLowerCase();
+const VERSION = require("./package.json").version;
+const BASE_URL = "https://notary.forgemesh.io";
+// Highest listed price is notarize_batch at $0.005. X402_MAX_PRICE_USD / X402_SESSION_BUDGET_USD can only lower these caps.
+const guard = createGuard({ baseUrl: BASE_URL, payTo: ["0x814EfE784709f5bF8dF47735D87602B01030e5D2"], maxPriceUsd: 0.01, sessionBudgetUsd: 10 });
+const MAX_CONTENT_CHARS = 100_000; // prompts/responses are hashed, not interpreted, so the cap is larger than for free text
+const ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+const HASH_PATTERN = /^[A-Za-z0-9:_-]{1,128}$/;
 
 const RECORD_PROPS = {
-  prompt: { type: "string", description: "The exact prompt/input that was sent to the model" },
-  response: { type: "string", description: "The exact model output you want a receipt for" },
-  model_id: { type: "string", description: "Model identifier, e.g. 'openai/gpt-5' or 'claude-fable-5'" },
+  prompt: { type: "string", maxLength: 100000, description: "The exact prompt/input that was sent to the model" },
+  response: { type: "string", maxLength: 100000, description: "The exact model output you want a receipt for" },
+  model_id: { type: "string", maxLength: 200, description: "Model identifier, e.g. 'openai/gpt-5' or 'claude-fable-5'" },
   client_timestamp: {
     type: "string",
+    maxLength: 64,
     description: "Optional ISO-8601 time the inference ran. Included in the content hash if provided.",
   },
 };
@@ -39,7 +39,7 @@ const TOOLS = [
       openWorldHint: true,
     },
     description:
-      "Get a cryptographic receipt for one AI inference. Returns a signed Ed25519 attestation, sha256 content hash, and Merkle chain-anchor status for {prompt, response, model_id}. The notary does NOT store your prompt or response — only the hash is retained. Costs $0.001 USDC via x402 (requires WALLET_PRIVATE_KEY for Base or SOLANA_PRIVATE_KEY for Solana).",
+      "Get a cryptographic receipt for one AI inference. Returns a signed Ed25519 attestation, sha256 content hash, and Merkle chain-anchor status for {prompt, response, model_id}. The notary does NOT store your prompt or response — only the hash is retained. Costs $0.001 USDC via x402 (requires WALLET_PRIVATE_KEY for a Base wallet).",
     inputSchema: {
       type: "object",
       properties: RECORD_PROPS,
@@ -55,7 +55,7 @@ const TOOLS = [
       openWorldHint: true,
     },
     description:
-      "Notarize up to 20 AI inferences in one call — one signed attestation per record. Ideal for audit trails and agent pipelines. Costs $0.005 USDC via x402 (requires WALLET_PRIVATE_KEY for Base or SOLANA_PRIVATE_KEY for Solana).",
+      "Notarize up to 20 AI inferences in one call — one signed attestation per record. Ideal for audit trails and agent pipelines. Costs $0.005 USDC via x402 (requires WALLET_PRIVATE_KEY for a Base wallet).",
     inputSchema: {
       type: "object",
       properties: {
@@ -83,10 +83,11 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        attestation_id: { type: "string", description: "Attestation id (att_…) from a receipt" },
+        attestation_id: { type: "string", maxLength: 128, pattern: "^[A-Za-z0-9_-]{1,128}$", description: "Attestation id (att_…) from a receipt" },
         ...RECORD_PROPS,
         content_hash: {
           type: "string",
+          maxLength: 128,
           description: "Alternative to supplying full content: the sha256 content hash to compare directly",
         },
       },
@@ -106,7 +107,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        attestation_id: { type: "string", description: "Attestation id (att_…)" },
+        attestation_id: { type: "string", maxLength: 128, pattern: "^[A-Za-z0-9_-]{1,128}$", description: "Attestation id (att_…)" },
       },
       required: ["attestation_id"],
     },
@@ -137,142 +138,58 @@ const TOOLS = [
   },
 ];
 
-function parseSolanaKeyBytes(raw) {
-  const value = String(raw || "").trim();
-  if (!value) return null;
-  if (value.startsWith("[")) return Uint8Array.from(JSON.parse(value));
-  if (/^[0-9a-fA-F]+$/.test(value) && value.length % 2 === 0) {
-    return Uint8Array.from(Buffer.from(value, "hex"));
-  }
-  try {
-    return Uint8Array.from(bs58.decode(value));
-  } catch (_) {
-    return Uint8Array.from(Buffer.from(value, "base64"));
-  }
-}
-
-async function buildSolanaHttpClient() {
-  const raw = process.env.SOLANA_PRIVATE_KEY || process.env.SOLANA_KEYPAIR || process.env.SOLANA_PRIVATE_KEY_BYTES;
-  const bytes = parseSolanaKeyBytes(raw);
-  if (!bytes) {
-    throw new Error(
-      "SOLANA_PRIVATE_KEY is not set. Solana notarization costs $0.001 USDC via x402 — set a dedicated low-balance Solana wallet keypair. Verification tools work without it."
-    );
-  }
-  const signer =
-    bytes.length === 32
-      ? await createKeyPairSignerFromPrivateKeyBytes(bytes)
-      : await createKeyPairSignerFromBytes(bytes);
-  const coreClient = registerExactSvmScheme(new x402Client(), {
-    signer,
-    networks: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
-  });
-  return { httpClient: new x402HTTPClient(coreClient), account: { address: signer.address }, rail: "solana" };
-}
-
-function buildBaseHttpClient() {
+function buildHttpClient() {
   const key = process.env.WALLET_PRIVATE_KEY;
   if (!key) {
     throw new Error(
       "WALLET_PRIVATE_KEY is not set. Notarization costs $0.001 USDC via x402 — set a dedicated low-balance Base wallet private key (never your primary wallet). Verification tools work without it."
     );
   }
-  const pk = key.startsWith("0x") ? key : "0x" + key;
-  const account = privateKeyToAccount(pk);
-  const coreClient = new x402Client().register("eip155:*", new ExactEvmScheme(toClientEvmSigner(account)));
-  return { httpClient: new x402HTTPClient(coreClient), account, rail: "base" };
+  const account = privateKeyToAccount(key.startsWith("0x") ? key : "0x" + key);
+  const coreClient = new x402Client().register("eip155:*", new ExactEvmScheme(toClientEvmSigner(account))).registerPolicy(guard.policy);
+  return new x402HTTPClient(coreClient);
 }
 
-async function buildHttpClient() {
-  if (NOTARY_RAIL === "solana") return buildSolanaHttpClient();
-  if (NOTARY_RAIL === "base") return buildBaseHttpClient();
-  throw new Error(`Unsupported NOTARY_RAIL=${NOTARY_RAIL}. Use "base" or "solana".`);
-}
-
-// x402 derives EIP-3009 validity windows from Date.now; choose a timestamp
-// valid for both Base block time and facilitator wall-clock checks.
-async function createChainTimedPaymentPayload(httpClient, paymentRequired) {
-  try {
-    const publicClient = createPublicClient({ chain: base, transport: http(BASE_RPC_URL) });
-    const block = await publicClient.getBlock();
-    const chainNow = Number(block.timestamp);
-    const originalNow = Date.now;
-    const localNow = Math.floor(originalNow() / 1000);
-    const timeout = Number(paymentRequired.accepts?.[0]?.maxTimeoutSeconds || 300);
-    const lowerBound = localNow + 30 - timeout;
-    const upperBound = chainNow + 600;
-    const signingNow = Math.min(Math.max(chainNow, lowerBound), upperBound);
-    Date.now = () => signingNow * 1000;
-    try {
-      return await httpClient.createPaymentPayload(paymentRequired);
-    } finally {
-      Date.now = originalNow;
-    }
-  } catch (_) {
-    return httpClient.createPaymentPayload(paymentRequired);
+function text(value, field, maxLength, { required = true, pattern } = {}) {
+  if (value === undefined || value === null || value === "") {
+    if (required) throw new Error(`${field} is required`);
+    return undefined;
   }
+  if (typeof value !== "string") throw new Error(`${field} must be a string`);
+  if (value.length > maxLength) throw new Error(`${field} exceeds ${maxLength} characters`);
+  if (pattern && !pattern.test(value)) throw new Error(`${field} has invalid characters`);
+  return value;
+}
+
+function cleanRecord(rec, field) {
+  if (!rec || typeof rec !== "object" || Array.isArray(rec)) throw new Error(`${field} must be an object`);
+  const out = {
+    prompt: text(rec.prompt, `${field}.prompt`, MAX_CONTENT_CHARS),
+    response: text(rec.response, `${field}.response`, MAX_CONTENT_CHARS),
+    model_id: text(rec.model_id, `${field}.model_id`, 200),
+  };
+  const ts = text(rec.client_timestamp, `${field}.client_timestamp`, 64, { required: false });
+  if (ts !== undefined) out.client_timestamp = ts;
+  return out;
+}
+
+function cleanVerify(args) {
+  const out = { attestation_id: text(args.attestation_id, "attestation_id", 128, { pattern: ID_PATTERN }) };
+  const hash = text(args.content_hash, "content_hash", 128, { required: false, pattern: HASH_PATTERN });
+  if (hash !== undefined) out.content_hash = hash;
+  if (args.prompt !== undefined || args.response !== undefined || args.model_id !== undefined) Object.assign(out, cleanRecord(args, "arguments"));
+  return out;
 }
 
 async function freeFetch(path, init) {
-  const res = await fetch(BASE_URL + path, init);
-  const raw = await res.text();
-  let data;
-  try {
-    data = JSON.parse(raw);
-  } catch (_) {
-    data = { raw: raw.slice(0, 500) };
-  }
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${JSON.stringify(data).slice(0, 300)}`);
-  return data;
-}
-
-async function paidPost(ctx, path, body) {
-  const { httpClient } = ctx;
-  const url = BASE_URL + path;
-  const init = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
-  const res = await fetch(url, init);
-
-  if (res.status === 402) {
-    let challengeBody;
-    try {
-      challengeBody = await res.clone().json();
-    } catch (_) {}
-    const paymentRequired = httpClient.getPaymentRequiredResponse((name) => res.headers.get(name), challengeBody);
-    const paymentPayload =
-      ctx.rail === "base"
-        ? await createChainTimedPaymentPayload(httpClient, paymentRequired)
-        : await httpClient.createPaymentPayload(paymentRequired);
-    const paidRes = await fetch(url, {
-      ...init,
-      headers: { ...init.headers, ...httpClient.encodePaymentSignatureHeader(paymentPayload) },
-    });
-    if (!paidRes.ok) {
-      const errBody = await paidRes.text().catch(() => paidRes.statusText);
-      throw new Error(`HTTP ${paidRes.status}: ${errBody.slice(0, 200)}`);
-    }
-    const data = await paidRes.json();
-    try {
-      const settleResponse = httpClient.getPaymentSettleResponse((name) => paidRes.headers.get(name));
-      if (settleResponse && data && typeof data === "object" && !Array.isArray(data)) {
-        return { ...data, _payment: settleResponse };
-      }
-    } catch (_) {}
-    return data;
-  }
-
-  if (!res.ok) {
-    const errBody = await res.text().catch(() => res.statusText);
-    throw new Error(`HTTP ${res.status}: ${errBody.slice(0, 200)}`);
-  }
-  return res.json();
+  const res = await guard.fetchBounded(path, init);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.text.slice(0, 200)}`);
+  try { return JSON.parse(res.text); } catch { throw new Error(`HTTP ${res.status}: non-JSON response`); }
 }
 
 async function main() {
-  let ctxPromise;
-  async function getPaymentContext() {
-    if (!ctxPromise) ctxPromise = buildHttpClient();
-    return ctxPromise;
-  }
+  let httpClient;
+  const getClient = () => (httpClient ||= buildHttpClient());
 
   const server = new Server({ name: "x402-notary-mcp", version: VERSION }, { capabilities: { tools: {} } });
 
@@ -284,20 +201,21 @@ async function main() {
       let data;
       switch (name) {
         case "notarize_inference":
-          data = await paidPost(await getPaymentContext(), "/api/notarize", args);
+          data = await guard.callPaid(getClient(), "/api/notarize", { method: "POST", body: cleanRecord(args, "arguments") });
           break;
         case "notarize_batch":
-          data = await paidPost(await getPaymentContext(), "/api/notarize/batch", { records: args.records });
+          if (!Array.isArray(args.records) || args.records.length < 1 || args.records.length > 20) throw new Error("records must contain 1-20 items");
+          data = await guard.callPaid(getClient(), "/api/notarize/batch", { method: "POST", body: { records: args.records.map((r, i) => cleanRecord(r, `records[${i}]`)) } });
           break;
         case "verify_attestation":
           data = await freeFetch("/api/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(args),
+            body: JSON.stringify(cleanVerify(args)),
           });
           break;
         case "get_receipt":
-          data = await freeFetch(`/api/receipt/${encodeURIComponent(args.attestation_id)}`);
+          data = await freeFetch(`/api/receipt/${encodeURIComponent(text(args.attestation_id, "attestation_id", 128, { pattern: ID_PATTERN }))}`);
           break;
         case "notary_stats":
           data = await freeFetch("/api/stats");
@@ -316,7 +234,7 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`x402-notary-mcp v${VERSION} ready — ${BASE_URL} rail=${NOTARY_RAIL}`);
+  console.error(`x402-notary-mcp v${VERSION} ready — ${BASE_URL}`);
 }
 
 main().catch((e) => {

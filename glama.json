@@ -1,7 +1,7 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "name": "@forgemeshlabs/x402-notary-mcp",
-  "description": "Cryptographic receipts for AI outputs on Base or Solana via x402.",
+  "description": "Cryptographic receipts for AI outputs on Base via x402.",
   "maintainers": [
     "clawdbotworker"
   ],
@@ -19,7 +19,6 @@
     "x402",
     "usdc",
     "base",
-    "solana",
     "notary",
     "receipts",
     "attestations",

@@ -7,7 +7,7 @@ next refresh does not depend on chat history.
 
 - GitHub: https://github.com/forgemeshlabs/x402-notary-mcp
 - npm: @forgemeshlabs/x402-notary-mcp
-- Hosted API: https://notary.forgemesh.io (Base) / https://notary-solana.forgemesh.io (Solana)
+- Hosted API: https://notary.forgemesh.io (Base)
 
 ## Build Steps
 
@@ -49,9 +49,6 @@ explicitly asks for the wrapped command.
 Canonical env schema belongs in `server.json`, not `glama.json`.
 
 - `WALLET_PRIVATE_KEY` - optional low-balance Base wallet for paid x402 calls.
-- `SOLANA_PRIVATE_KEY` - optional low-balance Solana keypair for paid x402 calls.
-- `NOTARY_RAIL` - `base` or `solana`. Defaults to `base`.
-- `NOTARY_BASE_URL` - optional hosted API base URL override.
 
 ## Dockerfile
 
