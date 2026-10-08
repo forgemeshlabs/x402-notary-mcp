@@ -18,7 +18,7 @@
       "environmentVariables": [
         {
           "name": "WALLET_PRIVATE_KEY",
-          "description": "Dedicated low-balance Base wallet private key for x402 USDC micropayments. Optional \u2014 verification tools work without it. Never use your primary wallet.",
+          "description": "Dedicated low-balance Base wallet private key for x402 USDC micropayments. Optional — verification tools work without it. Never use your primary wallet.",
           "isRequired": false,
           "isSecret": true,
           "format": "string"
@@ -28,20 +28,6 @@
           "description": "Payment rail: base or solana. Defaults to base, or solana when NOTARY_BASE_URL contains notary-solana.",
           "isRequired": false,
           "isSecret": false,
-          "format": "string"
-        },
-        {
-          "name": "NOTARY_BASE_URL",
-          "description": "Notary API origin. Use https://notary.forgemesh.io for Base or https://notary-solana.forgemesh.io for Solana.",
-          "isRequired": false,
-          "isSecret": false,
-          "format": "string"
-        },
-        {
-          "name": "SOLANA_PRIVATE_KEY",
-          "description": "Dedicated low-balance Solana keypair for x402 USDC micropayments. Supports JSON byte array, base58, base64, or hex. Optional \u2014 verification tools work without it.",
-          "isRequired": false,
-          "isSecret": true,
           "format": "string"
         }
       ]
