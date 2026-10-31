@@ -10,7 +10,7 @@
 
 **Prove what your AI said, when it said it, and which model said it.**
 
-Every AI output is just text. There's no proof a specific model produced a specific response at a specific time — and as agents start hiring other agents, that trust gap gets expensive. x402 Notary closes it: submit any inference, pay **$0.001** in USDC (automatic, via [x402](https://x402.org) on Base — no API key, no account), and get back a **signed, timestamped, chain-anchored receipt** that anyone can verify, free, forever.
+Every AI output is just text. There's no proof a specific model produced a specific response at a specific time — and as agents start hiring other agents, that trust gap gets expensive. x402 Notary closes it: submit any inference, pay **$0.005** in USDC (automatic, via [x402](https://x402.org) on Base — no API key, no account), and get back a **signed, timestamped, chain-anchored receipt** that anyone can verify, free, forever.
 
 > **We notarize the hash, not your secrets.** Your prompt and response are hashed and signed — never stored. Private signed receipts, publicly anchored by batch root.
 
@@ -40,7 +40,7 @@ Every AI output is just text. There's no proof a specific model produced a speci
 
 | Tool | Cost | What it does |
 |---|---|---|
-| `notarize_inference` | $0.001 | Signed receipt for one `{prompt, response, model_id}` |
+| `notarize_inference` | $0.005 | Signed receipt for one `{prompt, response, model_id}` |
 | `notarize_batch` | $0.005 | Up to 20 receipts in one call — built for audit trails |
 | `verify_attestation` | **free** | Check any receipt: signature, content hash, Merkle proof |
 | `get_receipt` | **free** | Fetch the public proof material for an attestation |

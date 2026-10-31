@@ -39,7 +39,7 @@ const TOOLS = [
       openWorldHint: true,
     },
     description:
-      "Get a cryptographic receipt for one AI inference. Returns a signed Ed25519 attestation, sha256 content hash, and Merkle chain-anchor status for {prompt, response, model_id}. The notary does NOT store your prompt or response — only the hash is retained. Costs $0.001 USDC via x402 (requires WALLET_PRIVATE_KEY for a Base wallet).",
+      "Get a cryptographic receipt for one AI inference. Returns a signed Ed25519 attestation, sha256 content hash, and Merkle chain-anchor status for {prompt, response, model_id}. The notary does NOT store your prompt or response — only the hash is retained. Costs $0.005 USDC via x402 (requires WALLET_PRIVATE_KEY for a Base wallet).",
     inputSchema: {
       type: "object",
       properties: RECORD_PROPS,
@@ -142,7 +142,7 @@ function buildHttpClient() {
   const key = process.env.WALLET_PRIVATE_KEY;
   if (!key) {
     throw new Error(
-      "WALLET_PRIVATE_KEY is not set. Notarization costs $0.001 USDC via x402 — set a dedicated low-balance Base wallet private key (never your primary wallet). Verification tools work without it."
+      "WALLET_PRIVATE_KEY is not set. Notarization costs $0.005 USDC via x402 — set a dedicated low-balance Base wallet private key (never your primary wallet). Verification tools work without it."
     );
   }
   const account = privateKeyToAccount(key.startsWith("0x") ? key : "0x" + key);
